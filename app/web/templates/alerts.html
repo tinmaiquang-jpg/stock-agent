@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Canh bao{% endblock %}
+{% block content %}
+<h1>Canh bao gia</h1>
+<form method="post" action="/alerts/add" class="row">
+  <div>
+    <label for="ticker">Ma</label>
+    <input id="ticker" name="ticker" required placeholder="FPT">
+  </div>
+  <div>
+    <label for="condition">Dieu kien</label>
+    <select id="condition" name="condition">
+      <option value="price_above">Gia vuot nguong</option>
+      <option value="price_below">Gia duoi nguong</option>
+      <option value="pct_change">Bien dong % tu</option>
+    </select>
+  </div>
+  <div>
+    <label for="threshold">Nguong</label>
+    <input id="threshold" name="threshold" type="number" step="0.01" required placeholder="71.5">
+  </div>
+  <div style="flex:0"><button type="submit">Tao</button></div>
+</form>
+
+<table>
+  <thead><tr><th>#</th><th>Ma</th><th>Dieu kien</th><th>Nguong</th><th>Lan cuoi bao</th><th></th></tr></thead>
+  <tbody>
+  {% for a in items %}
+    <tr>
+      <td>{{ a.id }}</td>
+      <td>{{ a.ticker }}</td>
+      <td>{{ a.condition }}</td>
+      <td>{{ a.threshold }}</td>
+      <td class="muted">{{ a.last_triggered_at or '-' }}</td>
+      <td style="text-align:right">
+        <form method="post" action="/alerts/toggle">
+          <input type="hidden" name="alert_id" value="{{ a.id }}">
+          <input type="hidden" name="active" value="{{ 'false' if a.active else 'true' }}">
+          <button type="submit">{{ 'Tat' if a.active else 'Bat' }}</button>
+        </form>
+      </td>
+    </tr>
+  {% else %}
+    <tr><td colspan="6" class="muted">Chua co canh bao nao.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+<p class="muted">Nguong gia tinh theo nghin VND (vd 71.5 = 71.500 dong). Scheduler kiem tra moi 15 phut trong gio giao dich (T2-T6, 9h-15h).</p>
+{% endblock %}

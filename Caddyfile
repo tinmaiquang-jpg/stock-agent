@@ -1,0 +1,5 @@
+# Doi domain.example.com thanh domain that cua ban (da tro A record ve IP VPS).
+# Caddy tu dong xin va gia han chung chi HTTPS Let's Encrypt.
+domain.example.com {
+	reverse_proxy agent:8000
+}

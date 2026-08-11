@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<h1>Dashboard</h1>
+<div class="cards">
+  <div class="card"><span class="muted">Ma dang theo doi</span><b>{{ watchlist_count }}</b></div>
+  <div class="card"><span class="muted">Canh bao dang bat</span><b>{{ active_alerts }}</b></div>
+  <div class="card"><span class="muted">Model</span><b style="font-size:1rem">{{ config.get('model', '-') }}</b></div>
+  <div class="card"><span class="muted">Effort</span><b style="font-size:1rem">{{ config.get('effort', '-') }}</b></div>
+</div>
+
+<h2 style="font-size:1.1rem">System prompt hien tai</h2>
+<pre>{{ config.get('system_prompt', '(chua dat)') }}</pre>
+<p><a href="/config">Sua cau hinh</a></p>
+{% endblock %}

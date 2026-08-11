@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Cau hinh{% endblock %}
+{% block content %}
+<h1>Cau hinh agent</h1>
+{% if saved %}<p class="ok">Da luu. Bot Telegram se dung cau hinh moi tu tin nhan tiep theo.</p>{% endif %}
+<form method="post" action="/config">
+  <label for="system_prompt">System prompt</label>
+  <textarea id="system_prompt" name="system_prompt" required>{{ config.get('system_prompt', '') }}</textarea>
+
+  <div class="row">
+    <div>
+      <label for="model">Model</label>
+      <select id="model" name="model">
+        {% for m in ['claude-opus-5', 'claude-sonnet-5', 'claude-haiku-4-5'] %}
+        <option value="{{ m }}" {% if config.get('model') == m %}selected{% endif %}>{{ m }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label for="effort">Effort</label>
+      <select id="effort" name="effort">
+        {% for e in ['low', 'medium', 'high', 'xhigh', 'max'] %}
+        <option value="{{ e }}" {% if config.get('effort') == e %}selected{% endif %}>{{ e }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label for="max_history_messages">So tin nhan lich su</label>
+      <input id="max_history_messages" name="max_history_messages" type="number" min="2" max="100"
+             value="{{ config.get('max_history_messages', '20') }}">
+    </div>
+  </div>
+
+  <p><button type="submit">Luu cau hinh</button></p>
+</form>
+<p class="muted">Effort cao hon = suy luan sau hon, ton token va lau hon. Medium phu hop chat thuong ngay.</p>
+{% endblock %}

@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Nhat ky{% endblock %}
+{% block content %}
+<h1>Nhat ky hoi thoai</h1>
+<p class="muted">100 tin nhan gan nhat, moi nhat truoc.</p>
+<table>
+  <thead><tr><th style="width:150px">Thoi diem</th><th style="width:90px">Vai tro</th><th>Noi dung</th></tr></thead>
+  <tbody>
+  {% for m in messages %}
+    <tr>
+      <td class="muted">{{ m.created_at[:19].replace('T', ' ') }}</td>
+      <td>{{ m.role }}</td>
+      <td><pre>{{ m.content }}</pre></td>
+    </tr>
+  {% else %}
+    <tr><td colspan="3" class="muted">Chua co tin nhan nao.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

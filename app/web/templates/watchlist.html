@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Watchlist{% endblock %}
+{% block content %}
+<h1>Watchlist</h1>
+<form method="post" action="/watchlist/add" class="row">
+  <div>
+    <label for="ticker">Ma</label>
+    <input id="ticker" name="ticker" required placeholder="FPT">
+  </div>
+  <div style="flex:2">
+    <label for="note">Ghi chu</label>
+    <input id="note" name="note" placeholder="tuy chon">
+  </div>
+  <div style="flex:0"><button type="submit">Them</button></div>
+</form>
+
+<table>
+  <thead><tr><th>Ma</th><th>Ghi chu</th><th></th></tr></thead>
+  <tbody>
+  {% for item in items %}
+    <tr>
+      <td>{{ item.ticker }}</td>
+      <td>{{ item.note or '' }}</td>
+      <td style="text-align:right">
+        <form method="post" action="/watchlist/remove">
+          <input type="hidden" name="ticker" value="{{ item.ticker }}">
+          <button type="submit">Xoa</button>
+        </form>
+      </td>
+    </tr>
+  {% else %}
+    <tr><td colspan="3" class="muted">Chua co ma nao.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
