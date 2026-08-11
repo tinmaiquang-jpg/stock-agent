@@ -145,6 +145,10 @@ Telegram inline button trước mỗi lệnh và log đầy đủ.
 
 ---
 
-## Deploy lên VPS
+## Deploy
 
-Xem [DEPLOY.md](DEPLOY.md).
+Xem [DEPLOY.md](DEPLOY.md) — Railway (nhanh nhất) hoặc VPS.
+
+App cần **1 process chạy liên tục 24/7** (Telegram polling + scheduler), nên **không deploy
+được lên Vercel/Netlify/Cloudflare Workers** — các nền tảng serverless không có process sống
+liên tục. Chi tiết ở đầu DEPLOY.md.
