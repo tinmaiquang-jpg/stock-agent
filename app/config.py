@@ -6,7 +6,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
-    claude_api_key: str
+    # Chi can khi backend = 'api_key'. Backend 'subscription' dung
+    # CLAUDE_CODE_OAUTH_TOKEN (Agent SDK doc truc tiep tu bien moi truong).
+    claude_api_key: str = ""
     claude_model: str = "claude-sonnet-5"
 
     telegram_bot_token: str

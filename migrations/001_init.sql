@@ -13,7 +13,10 @@ insert into app_config (key, value) values
   -- prefix cua app nay ~1050). Doi model bat cu luc nao tren web admin.
   ('model', 'claude-sonnet-5'),
   ('effort', 'medium'),
-  ('max_history_messages', '20')
+  ('max_history_messages', '20'),
+  -- 'subscription' = Claude Agent SDK + CLAUDE_CODE_OAUTH_TOKEN (goi Pro/Max, khong ton
+  -- tien API). 'api_key' = Messages API + CLAUDE_API_KEY (tinh tien theo token).
+  ('llm_backend', 'subscription')
 on conflict (key) do nothing;
 
 create table if not exists conversations (

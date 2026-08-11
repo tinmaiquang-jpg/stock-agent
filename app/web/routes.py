@@ -7,6 +7,7 @@ from fastapi import APIRouter, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
+from app.agent import settings_store
 from app.db import repository
 from app.web.auth import SESSION_KEY, check_credentials, is_authenticated
 
@@ -74,13 +75,17 @@ async def config_save(
     model: str = Form(...),
     effort: str = Form(...),
     max_history_messages: str = Form(...),
+    llm_backend: str = Form(...),
 ):
     if redirect := _require_auth(request):
         return redirect
+    if llm_backend not in settings_store.BACKENDS:
+        llm_backend = settings_store.DEFAULT_BACKEND
     repository.set_config("system_prompt", system_prompt)
     repository.set_config("model", model)
     repository.set_config("effort", effort)
     repository.set_config("max_history_messages", max_history_messages)
+    repository.set_config("llm_backend", llm_backend)
     return RedirectResponse(url="/config?saved=true", status_code=303)
 
 

@@ -7,6 +7,7 @@ import logging
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters
 
+from app.agent.backend_sdk import NOT_LOGGED_IN_HINT, AuthError
 from app.agent.memory import chat
 from app.config import get_settings
 from app.db import repository
@@ -73,6 +74,10 @@ async def on_message(update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
     try:
         # Agent goi Claude + vnstock dong bo, chay o thread khac de khong block event loop
         reply = await asyncio.to_thread(chat, update.effective_user.id, update.message.text)
+    except AuthError:
+        logger.exception("Agent SDK chua duoc xac thuc")
+        await update.message.reply_text(NOT_LOGGED_IN_HINT)
+        return
     except Exception:
         logger.exception("Loi khi xu ly tin nhan")
         await update.message.reply_text("Co loi khi xu ly. Ban thu lai sau it phut nhe.")

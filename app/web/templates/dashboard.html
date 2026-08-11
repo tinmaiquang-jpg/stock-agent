@@ -7,6 +7,7 @@
   <div class="card"><span class="muted">Canh bao dang bat</span><b>{{ active_alerts }}</b></div>
   <div class="card"><span class="muted">Model</span><b style="font-size:1rem">{{ config.get('model', '-') }}</b></div>
   <div class="card"><span class="muted">Effort</span><b style="font-size:1rem">{{ config.get('effort', '-') }}</b></div>
+  <div class="card"><span class="muted">Backend</span><b style="font-size:1rem">{{ config.get('llm_backend', 'subscription') }}</b></div>
 </div>
 
 <h2 style="font-size:1.1rem">System prompt hien tai</h2>
