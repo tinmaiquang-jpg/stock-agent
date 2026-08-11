@@ -46,8 +46,7 @@ git push -u origin main
 Mở service → tab **Variables** → **Raw Editor**, dán vào (điền giá trị thật, lấy từ `.env` ở local):
 
 ```
-CLAUDE_API_KEY=
-CLAUDE_MODEL=claude-sonnet-5
+CLAUDE_CODE_OAUTH_TOKEN=
 TELEGRAM_BOT_TOKEN=
 TELEGRAM_OWNER_ID=
 SUPABASE_URL=
@@ -58,8 +57,11 @@ APP_SECRET_KEY=
 TZ=Asia/Ho_Chi_Minh
 ```
 
-Hai lưu ý:
+Ba lưu ý:
 
+- `CLAUDE_CODE_OAUTH_TOKEN` là token subscription, sinh **trên máy local** bằng
+  `./scripts/setup_token.sh` (cần browser) rồi dán vào đây. Token hạn 1 năm.
+  Nếu dùng backend `api_key` thì thay bằng `CLAUDE_API_KEY` + `CLAUDE_MODEL`.
 - `TZ=Asia/Ho_Chi_Minh` là **bắt buộc** — scheduler dựa vào giờ giao dịch VN (T2–T6, 9h–15h).
 - Sinh `APP_SECRET_KEY` **mới** cho production, đừng dùng lại key của môi trường dev:
   ```bash
@@ -217,9 +219,11 @@ không có nhược điểm đáng kể ở quy mô này.
 
 ## Bảo mật cần lưu ý
 
-- `.env` chứa Claude API key, Supabase service_role key, Telegram token — **không bao giờ
-  commit lên Git** (`.gitignore` đã chặn). Trên Railway/Render thì khai báo ở tab Variables;
-  trên VPS thì tạo file `.env` trực tiếp trên server.
+- `.env` chứa `CLAUDE_CODE_OAUTH_TOKEN` (hoặc Claude API key), Supabase service_role key,
+  Telegram token — **không bao giờ commit lên Git** (`.gitignore` đã chặn). Trên
+  Railway/Render thì khai báo ở tab Variables; trên VPS thì tạo file `.env` trên server.
+- `CLAUDE_CODE_OAUTH_TOKEN` cấp quyền dùng gói Claude của bạn — coi nó như mật khẩu. Nếu bị
+  lộ, đăng nhập claude.ai và thu hồi, rồi chạy lại `./scripts/setup_token.sh`.
 - Nếu dùng GitHub, để repo ở chế độ **Private**.
 - Web admin chỉ có 1 tài khoản, bảo vệ bằng password hash + session cookie. Dùng mật khẩu mạnh.
 - Bot Telegram chỉ trả lời `TELEGRAM_OWNER_ID`; người khác nhắn sẽ bị từ chối.

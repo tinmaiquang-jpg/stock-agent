@@ -25,8 +25,11 @@ Browser   ─┘     ├─ web admin routes      ─▶  vnstock (giá, lịch 
 | [app/main.py](app/main.py) | Khởi động web + bot + scheduler trong 1 process |
 | [app/config.py](app/config.py) | Đọc biến môi trường từ `.env` |
 | [app/tools/stock_data.py](app/tools/stock_data.py) | Lấy dữ liệu chứng khoán VN qua `vnstock` v4 |
-| [app/agent/tools.py](app/agent/tools.py) | Định nghĩa tool cho Claude + dispatch |
-| [app/agent/orchestrator.py](app/agent/orchestrator.py) | Vòng lặp tool-use với Claude |
+| [app/agent/tools.py](app/agent/tools.py) | Định nghĩa 10 tool + dispatch (dùng chung cho cả 2 backend) |
+| [app/agent/orchestrator.py](app/agent/orchestrator.py) | Chọn backend theo cấu hình |
+| [app/agent/backend_sdk.py](app/agent/backend_sdk.py) | Backend `subscription` — Claude Agent SDK |
+| [app/agent/backend_api.py](app/agent/backend_api.py) | Backend `api_key` — Messages API |
+| [app/agent/settings_store.py](app/agent/settings_store.py) | Đọc cấu hình agent từ Supabase |
 | [app/agent/memory.py](app/agent/memory.py) | Lưu/đọc lịch sử hội thoại |
 | [app/telegram_bot/bot.py](app/telegram_bot/bot.py) | Bot Telegram, chỉ trả lời chính chủ |
 | [app/web/routes.py](app/web/routes.py) | Web admin: config, watchlist, alerts, logs |
@@ -63,10 +66,13 @@ File `.env` đã có sẵn Telegram bot token. Cần điền thêm:
 
 | Biến | Lấy ở đâu |
 |---|---|
-| `CLAUDE_API_KEY` | https://platform.claude.com → API Keys |
+| `CLAUDE_CODE_OAUTH_TOKEN` | Chạy `./scripts/setup_token.sh` (cần gói Claude Pro/Max) |
 | `TELEGRAM_OWNER_ID` | Chat với [@userinfobot](https://t.me/userinfobot) trên Telegram, nó trả về user id dạng số |
 | `SUPABASE_URL`, `SUPABASE_KEY` | Bước 2 |
 | `ADMIN_PASSWORD_HASH`, `APP_SECRET_KEY` | Chạy lệnh dưới đây rồi dán kết quả vào `.env` |
+
+`CLAUDE_API_KEY` chỉ cần nếu bạn đổi backend sang `api_key` — xem mục
+[Hai backend LLM](#hai-backend-llm--chọn-trên-web-admin).
 
 ```bash
 .venv/bin/python scripts/make_secrets.py 'mat-khau-admin-cua-ban'
@@ -107,7 +113,41 @@ File `.env` đã có sẵn Telegram bot token. Cần điền thêm:
 
 ---
 
-## Chi phí & chọn model
+## Hai backend LLM — chọn trên web admin
+
+| Backend | Xác thực | Chi phí | Ghi chú |
+|---|---|---|---|
+| **`subscription`** (mặc định) | `CLAUDE_CODE_OAUTH_TOKEN` | **0đ** — dùng quota gói Claude Pro/Max | Qua Claude Agent SDK. Token hạn 1 năm |
+| `api_key` | `CLAUDE_API_KEY` | Tính theo token (~$4–6/tháng) | Qua Messages API |
+
+Cả hai dùng **chung 10 tool**, nên đổi qua lại không thay đổi khả năng của agent. Đổi ở
+trang **Cấu hình** trên web admin.
+
+### Lấy token cho backend `subscription`
+
+Chạy trên máy có browser (bạn sẽ đăng nhập và duyệt quyền):
+
+```bash
+./scripts/setup_token.sh
+```
+
+Token in ra terminal — dán vào `CLAUDE_CODE_OAUTH_TOKEN` trong `.env`. Script dùng binary
+Claude Code đi kèm package `claude-agent-sdk`, **không cần cài Node.js**.
+
+Cần gói Claude **Pro, Max, Team hoặc Enterprise**.
+
+### Điều cần biết khi dùng `subscription`
+
+- **Quota dùng chung với Claude Code của bạn.** Bot tiêu cùng hạn mức gói Max. Nếu bot dùng
+  nhiều, Claude Code của bạn có thể bị throttle.
+- **Token hết hạn sau 1 năm** — chạy lại `./scripts/setup_token.sh` và cập nhật env var.
+- **Chậm hơn `api_key`**: Agent SDK spawn một process con cho mỗi tin nhắn.
+- **Agent không có quyền shell/file.** Toàn bộ built-in tool (Bash/Read/Write/Edit/WebSearch)
+  đã bị tắt bằng `tools=[]`; agent chỉ gọi được 10 tool trong [app/agent/tools.py](app/agent/tools.py).
+- **Lịch sử hội thoại vẫn lưu ở Supabase**, không dùng session trên đĩa của SDK — vì
+  filesystem trên Railway là ephemeral, redeploy là mất.
+
+## Chi phí & chọn model (chỉ áp dụng cho backend `api_key`)
 
 Model đổi được trên web admin (trang **Cấu hình**), không cần sửa code. Ước tính cho
 ~10 tin nhắn/ngày:
