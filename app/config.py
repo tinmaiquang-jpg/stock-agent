@@ -11,11 +11,21 @@ class Settings(BaseSettings):
     claude_api_key: str = ""
     claude_model: str = "claude-sonnet-5"
 
-    telegram_bot_token: str
-    telegram_owner_id: int
+    # Token tu `claude setup-token` (han 1 nam). Backend 'subscription' truyen bien nay
+    # vao subprocess cua Agent SDK - xem app/agent/backend_sdk.py:_sdk_env
+    claude_code_oauth_token: str = ""
+
+    # Khong bat buoc: web admin deploy rieng (Vercel) khong dung Telegram. Phan chay bot
+    # kiem tra lai o app/telegram_bot/bot.py va bao loi ro rang neu thieu.
+    telegram_bot_token: str = ""
+    telegram_owner_id: int = 0
 
     supabase_url: str
     supabase_key: str
+
+    # Cookie session chi gui qua HTTPS. Mac dinh True cho an toan; .env local dat false
+    # de dang nhap duoc qua http://127.0.0.1
+    session_https_only: bool = True
 
     admin_username: str = "admin"
     admin_password_hash: str

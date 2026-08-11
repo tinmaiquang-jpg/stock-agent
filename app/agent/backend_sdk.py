@@ -29,6 +29,7 @@ from claude_agent_sdk import (
 
 from app.agent import settings_store
 from app.agent.tools import TOOL_SCHEMAS, execute_tool
+from app.config import get_settings
 
 logger = logging.getLogger(__name__)
 
@@ -80,10 +81,22 @@ def _render_prompt(user_message: str, history: list[dict[str, str]] | None) -> s
     return "\n".join(lines)
 
 
+def _sdk_env() -> dict[str, str]:
+    """Truyen token vao subprocess ma SDK spawn.
+
+    SDK doc CLAUDE_CODE_OAUTH_TOKEN tu moi truong cua subprocess, con token cua ta nam
+    trong .env (pydantic-settings doc vao Settings chu khong export ra os.environ). Neu
+    khong truyen tay o day, SDK bao "Not logged in" du .env da co token.
+    """
+    token = get_settings().claude_code_oauth_token.strip()
+    return {"CLAUDE_CODE_OAUTH_TOKEN": token} if token else {}
+
+
 def _build_options(config: settings_store.AgentConfig) -> ClaudeAgentOptions:
     return ClaudeAgentOptions(
         model=config.model,
         effort=config.effort,
+        env=_sdk_env(),
         # Chuoi thuan = CHI dung system prompt cua ta, khong keo theo prompt cua Claude Code
         system_prompt=config.system_prompt,
         # Tat toan bo built-in tool. Agent chi con 10 tool cua ta.
@@ -124,6 +137,10 @@ async def _run(user_message: str, history: list[dict[str, str]] | None) -> str:
 
     final_text = ""
     fallback_text: list[str] = []
+    # Khong raise ben trong `async for`: lam vay dong generator khi no dang chay va sinh
+    # "RuntimeError: aclose(): asynchronous generator is already running". Ghi lai loi roi
+    # raise sau khi vong lap ket thuc.
+    pending_error: str | None = None
 
     try:
         async for message in query(prompt=prompt, options=_build_options(config)):
@@ -143,19 +160,19 @@ async def _run(user_message: str, history: list[dict[str, str]] | None) -> str:
                 # Luu y: SDK co the tra subtype='success' NHUNG is_error=True (vd chua
                 # dang nhap), nen phai kiem tra ca hai.
                 if getattr(message, "is_error", False):
-                    detail = message.result or ""
-                    if _is_auth_failure(detail):
-                        raise AuthError(detail.strip() or "Not logged in")
-                    raise RuntimeError(f"Agent SDK loi: {detail.strip() or message.subtype}")
-                if message.result:
+                    pending_error = (message.result or "").strip() or message.subtype
+                elif message.result:
                     final_text = message.result
-    except AuthError:
-        raise
     except Exception as exc:
-        # SDK tu raise Exception sau ResultMessage loi; nhan dien loi auth o day nua.
-        if _is_auth_failure(str(exc)) or _is_auth_failure("\n".join(fallback_text)):
-            raise AuthError(str(exc)) from exc
-        raise
+        # Sau ResultMessage loi, SDK con tu raise Exception. Neu da ghi nhan loi o tren thi
+        # bo qua exception nay; neu chua thi dung no lam nguyen nhan.
+        if pending_error is None:
+            pending_error = str(exc)
+
+    if pending_error is not None:
+        if _is_auth_failure(pending_error) or _is_auth_failure("\n".join(fallback_text)):
+            raise AuthError(pending_error)
+        raise RuntimeError(f"Agent SDK loi: {pending_error}")
 
     return final_text or "\n".join(fallback_text).strip() or "(Agent khong tra ve noi dung)"
 

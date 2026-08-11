@@ -1,0 +1,23 @@
+[project]
+name = "stock-agent-admin"
+version = "0.1.0"
+description = "Web admin cho tro ly chung khoan VN - phan deploy len Vercel"
+requires-python = ">=3.12"
+
+# CHI dung cho deploy Vercel (web admin). Vercel uu tien pyproject.toml hon
+# requirements.txt, nen day la cach de KHONG keo claude-agent-sdk (273MB, vuot gioi han
+# bundle) va vnstock/pandas/telegram vao function.
+#
+# Chay local hoac deploy Railway thi dung requirements.txt (day du hon):
+#   uv pip install -r requirements.txt
+dependencies = [
+    "fastapi==0.141.1",
+    "jinja2==3.1.4",
+    "supabase==2.31.0",
+    "itsdangerous==2.2.0",
+    "python-multipart==0.0.12",
+    "pydantic-settings==2.5.2",
+]
+
+[tool.vercel]
+entrypoint = "api.index:app"

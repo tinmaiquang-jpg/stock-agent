@@ -1,0 +1,14 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "functions": {
+    "api/**/*.py": {
+      "excludeFiles": "{.venv/**,venv/**,scripts/**,migrations/**,app/agent/backend_sdk.py,app/agent/orchestrator.py,app/tools/**,app/telegram_bot/**,app/scheduler.py,app/main.py,**/__pycache__/**,*.md,Dockerfile,docker-compose.yml,Caddyfile}"
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/api/index.py"
+    }
+  ]
+}

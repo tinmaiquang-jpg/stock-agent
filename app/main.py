@@ -5,12 +5,10 @@ import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
-from starlette.middleware.sessions import SessionMiddleware
 
-from app.config import get_settings
 from app.scheduler import build_scheduler
 from app.telegram_bot.bot import build_application
-from app.web.routes import router
+from app.web.app import create_admin_app
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s"
@@ -38,6 +36,5 @@ async def lifespan(app: FastAPI):
     logger.info("Da dung bot va scheduler")
 
 
-app = FastAPI(title="Stock Agent Admin", lifespan=lifespan)
-app.add_middleware(SessionMiddleware, secret_key=get_settings().app_secret_key)
-app.include_router(router)
+# Cung web admin nhu ban deploy tren Vercel, cong them lifespan chay bot + scheduler.
+app = create_admin_app(lifespan=lifespan)

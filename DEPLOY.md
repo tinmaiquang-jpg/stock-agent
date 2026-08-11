@@ -11,10 +11,14 @@ App này là **1 process chạy liên tục 24/7** (Telegram polling + scheduler
 |---|---|---|
 | **Railway / Render / Fly.io** | ✅ Khuyến nghị | Chạy container liên tục, deploy trực tiếp từ Dockerfile có sẵn |
 | **VPS** (Vultr, DigitalOcean...) | ✅ | Toàn quyền, rẻ nhất về lâu dài |
-| **Vercel / Netlify / Cloudflare Workers** | ❌ | Serverless — không có process chạy liên tục, Telegram polling và APScheduler không hoạt động. Muốn dùng phải viết lại sang webhook + cron, và cron gói free chỉ chạy 1 lần/ngày (không đủ cho cảnh báo giá) |
+| **Vercel / Netlify / Cloudflare Workers** | ❌ cho bot | Serverless — không có process chạy liên tục. Ngoài ra `claude-agent-sdk` nặng **273MB** (đã đo), vượt giới hạn bundle 250MB của Vercel |
+
+Riêng **web admin** thì tách ra Vercel được, vì nó không đụng tới agent SDK →
+[Phần C](#phần-c--web-admin-trên-vercel-tuỳ-chọn).
 
 - **Railway** — nhanh nhất để bắt đầu → [Phần A](#phần-a--deploy-lên-railway-khuyến-nghị)
 - **VPS** — kiểm soát tối đa, rẻ nhất khi chạy lâu → [Phần B](#phần-b--deploy-lên-vps)
+- **Vercel** — chỉ web admin, chạy song song với A hoặc B → [Phần C](#phần-c--web-admin-trên-vercel-tuỳ-chọn)
 
 ---
 
@@ -216,6 +220,73 @@ Polling hoạt động tốt cho quy mô cá nhân — chỉ chuyển sang webho
 [app/main.py](app/main.py): thay `updater.start_polling()` bằng `bot.set_webhook(url=...)` và
 thêm một route `POST /telegram/webhook` nhận update. Chưa làm sẵn vì polling đơn giản hơn và
 không có nhược điểm đáng kể ở quy mô này.
+
+---
+
+# Phần C — Web admin trên Vercel (tuỳ chọn)
+
+Phần này **chỉ deploy web admin** (Cấu hình, Watchlist, Alerts, Nhật ký). Bot Telegram,
+scheduler và agent vẫn phải chạy ở Railway hoặc VPS (Phần A/B).
+
+Cách này hoạt động được vì mọi cấu hình đều nằm trong Supabase, không nằm trong bộ nhớ
+process. Sửa system prompt trên Vercel → con bot ở Railway áp dụng ngay ở tin nhắn kế tiếp,
+không cần restart hay deploy lại. (Đã kiểm chứng: đổi prompt qua web admin, agent đổi hành vi
+ngay lập tức.)
+
+### Vì sao không deploy cả bot lên Vercel
+
+| Rào cản | Số liệu |
+|---|---|
+| `claude-agent-sdk` chứa binary Claude Code | **273MB** > giới hạn bundle 250MB |
+| Telegram polling cần process sống liên tục | Serverless function tắt sau mỗi request |
+| Agent mất 20–60s mỗi câu hỏi | Vượt giới hạn thời gian chạy mặc định |
+| Scheduler cảnh báo mỗi 15 phút | Vercel Cron gói Hobby chỉ chạy 1 lần/ngày |
+
+### C1. Các file đã chuẩn bị sẵn
+
+| File | Vai trò |
+|---|---|
+| [api/index.py](api/index.py) | Entrypoint Vercel — chỉ tạo web admin, không đụng agent/bot |
+| [app/web/app.py](app/web/app.py) | Factory dùng chung cho cả local lẫn Vercel |
+| [pyproject.toml](pyproject.toml) | Khai báo **6 package** tối thiểu (~28MB). Vercel ưu tiên file này hơn `requirements.txt`, nên `claude-agent-sdk` không bị kéo vào |
+| [vercel.json](vercel.json) | Loại các file không cần khỏi bundle + route mọi đường dẫn về app |
+| [.vercelignore](.vercelignore) | Chặn `.venv/` và phần bot khỏi bị upload |
+
+### C2. Deploy
+
+Trên [vercel.com/new](https://vercel.com/new), import repo GitHub của project. Vercel tự nhận
+Python. Không cần đổi Build/Output settings.
+
+### C3. Khai báo biến môi trường
+
+Vào **Settings → Environment Variables**, thêm 4 biến (web admin chỉ cần chừng này — không
+cần token Claude hay Telegram):
+
+| Biến | Giá trị |
+|---|---|
+| `SUPABASE_URL` | Giống `.env` local |
+| `SUPABASE_KEY` | Giống `.env` local |
+| `ADMIN_USERNAME` | `admin` |
+| `ADMIN_PASSWORD_HASH` | Giống `.env` local |
+| `APP_SECRET_KEY` | Giống `.env` local |
+
+**Không** thêm `SESSION_HTTPS_ONLY` — Vercel có HTTPS sẵn, để mặc định (`true`) cho an toàn.
+
+Không cần khai báo `TELEGRAM_BOT_TOKEN`, `TELEGRAM_OWNER_ID` hay `CLAUDE_CODE_OAUTH_TOKEN`:
+web admin không dùng đến, và chúng đã được để không bắt buộc trong
+[app/config.py](app/config.py). Phần chạy bot vẫn kiểm tra riêng và báo lỗi rõ nếu thiếu.
+
+### C4. Kiểm tra
+
+Mở URL Vercel cấp → đăng nhập → vào trang **Cấu hình**, đổi system prompt và lưu. Sau đó nhắn
+cho bot trên Telegram, xác nhận nó trả lời theo prompt mới.
+
+### C5. Lưu ý
+
+- Web admin trên Vercel **công khai trên Internet** — chỉ có mật khẩu bảo vệ. Dùng mật khẩu
+  mạnh, hoặc bật Vercel Authentication (Settings → Deployment Protection) để chặn thêm 1 lớp.
+- Nếu đã deploy Phần A/B thì web admin có **2 địa chỉ** cùng đọc chung Supabase. Muốn gọn thì
+  ở Railway đừng mở public domain, chỉ dùng bản Vercel.
 
 ## Bảo mật cần lưu ý
 

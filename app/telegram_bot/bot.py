@@ -87,7 +87,20 @@ async def on_message(update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 def build_application() -> Application:
-    app = Application.builder().token(get_settings().telegram_bot_token).build()
+    settings = get_settings()
+    # Hai bien nay khong bat buoc trong Settings (web admin deploy rieng khong can), nen
+    # kiem tra o day - noi that su can chung - de bao loi ro thay vi chet mo ho luc chay.
+    if not settings.telegram_bot_token:
+        raise RuntimeError(
+            "Thieu TELEGRAM_BOT_TOKEN. Lay tu @BotFather roi dat vao .env "
+            "(hoac Variables tren Railway/VPS)."
+        )
+    if not settings.telegram_owner_id:
+        raise RuntimeError(
+            "Thieu TELEGRAM_OWNER_ID. Chat voi @userinfobot de lay numeric user id, "
+            "roi dat vao .env. Thieu bien nay thi bot se tra loi bat ky ai."
+        )
+    app = Application.builder().token(settings.telegram_bot_token).build()
     app.add_handler(CommandHandler("start", cmd_start))
     app.add_handler(CommandHandler("watchlist", cmd_watchlist))
     app.add_handler(CommandHandler("alerts", cmd_alerts))
