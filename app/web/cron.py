@@ -9,7 +9,9 @@ import os
 
 from fastapi import APIRouter, Header, Request, Response
 
-from app.scheduler import check_alerts
+# Import tu app.alerts chu KHONG phai app.scheduler: file kia keo theo apscheduler,
+# package khong co trong bundle Vercel -> function crash luc import.
+from app.alerts import check_alerts
 
 logger = logging.getLogger(__name__)
 

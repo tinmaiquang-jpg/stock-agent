@@ -20,7 +20,9 @@ dependencies = [
     "python-multipart==0.0.12",
     "pydantic-settings==2.5.2",
     "claude-agent-sdk==0.2.135",
-    "python-telegram-bot==21.6",
+    # [job-queue] keo them apscheduler. Khong bat buoc de import duoc (PTB boc trong
+    # try/except), nhung thieu no thi Application.builder() dung JobQueue o che do suy bien.
+    "python-telegram-bot[job-queue]==21.6",
     "vnstock==4.0.5",
     "tenacity==9.1.4",
     "pandas==2.3.3",

@@ -19,10 +19,12 @@ import tempfile
 # /tmp TRUOC khi import bat ky module nao cham toi SDK.
 if os.environ.get("VERCEL"):
     _tmp = tempfile.gettempdir()
-    os.environ.setdefault("HOME", _tmp)
-    os.environ.setdefault("CLAUDE_CONFIG_DIR", os.path.join(_tmp, ".claude"))
-    os.environ.setdefault("XDG_CONFIG_HOME", os.path.join(_tmp, ".config"))
-    os.environ.setdefault("XDG_CACHE_HOME", os.path.join(_tmp, ".cache"))
+    # Gan de (khong dung setdefault): Vercel DA dat san HOME tro vao thu muc chi doc,
+    # nen setdefault se khong ghi de va cac thu vien van co ghi vao do roi loi.
+    os.environ["HOME"] = _tmp
+    os.environ["CLAUDE_CONFIG_DIR"] = os.path.join(_tmp, ".claude")
+    os.environ["XDG_CONFIG_HOME"] = os.path.join(_tmp, ".config")
+    os.environ["XDG_CACHE_HOME"] = os.path.join(_tmp, ".cache")
 
 from app.telegram_bot.webhook import router as telegram_router  # noqa: E402
 from app.web.app import create_admin_app  # noqa: E402
