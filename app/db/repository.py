@@ -1,10 +1,13 @@
 """Truy cap du lieu Supabase - tat ca module khac (agent, telegram bot, web admin,
 scheduler) deu di qua cac ham o day, khong goi truc tiep supabase client o noi khac."""
 
+import logging
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from app.db.client import get_supabase
+
+logger = logging.getLogger(__name__)
 
 # ---------- app_config ----------
 
@@ -96,6 +99,19 @@ def claim_update(update_id: int) -> bool:
         return True
     except Exception:
         return False
+
+
+def release_update(update_id: int) -> None:
+    """Bo danh dau da xu ly, de Telegram gui lai thi duoc xu ly that.
+
+    Dung khi that bai vi loi cau hinh (vd thieu TELEGRAM_BOT_TOKEN) chu khong phai vi noi
+    dung tin nhan: giu danh dau trong truong hop do se lam mat tin nhan im lang, vi lan
+    gui lai cua Telegram bi coi la trung.
+    """
+    try:
+        get_supabase().table("processed_updates").delete().eq("update_id", update_id).execute()
+    except Exception:
+        logger.warning("Khong go duoc danh dau update %s", update_id, exc_info=True)
 
 
 def purge_old_updates(keep_hours: int = 48) -> None:

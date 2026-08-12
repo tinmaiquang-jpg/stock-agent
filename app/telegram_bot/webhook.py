@@ -66,6 +66,10 @@ async def telegram_webhook(
         # Thuong la thieu TELEGRAM_BOT_TOKEN / TELEGRAM_OWNER_ID trong bien moi truong.
         # Tra 500 kem ly do de nhin log ra ngay, thay vi 500 tran khong noi gi.
         logger.exception("Khong khoi tao duoc Telegram application")
+        # Loi cau hinh chu khong phai loi noi dung tin nhan: go danh dau de sau khi sua
+        # bien moi truong, lan gui lai cua Telegram duoc xu ly that su.
+        if update_id is not None:
+            repository.release_update(update_id)
         return JSONResponse(status_code=500, content={"error": str(exc)})
 
     try:
