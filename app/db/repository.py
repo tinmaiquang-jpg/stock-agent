@@ -1,7 +1,7 @@
 """Truy cap du lieu Supabase - tat ca module khac (agent, telegram bot, web admin,
 scheduler) deu di qua cac ham o day, khong goi truc tiep supabase client o noi khac."""
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from app.db.client import get_supabase
@@ -79,6 +79,30 @@ def get_recent_messages_for_admin(limit: int = 100) -> list[dict[str, Any]]:
         .execute()
     )
     return res.data
+
+
+# ---------- chong xu ly trung update (che do webhook) ----------
+
+
+def claim_update(update_id: int) -> bool:
+    """Danh dau da xu ly update nay. Tra False neu truoc do da xu ly roi.
+
+    Telegram gui lai update khi webhook phan hoi cham (agent mat 20-60s). Khong co
+    buoc nay thi 1 tin nhan se duoc tra loi 2 lan. Dua vao primary key cua Postgres
+    de dam bao chi mot request gianh duoc, ke ca khi 2 request chay song song.
+    """
+    try:
+        get_supabase().table("processed_updates").insert({"update_id": update_id}).execute()
+        return True
+    except Exception:
+        return False
+
+
+def purge_old_updates(keep_hours: int = 48) -> None:
+    cutoff = datetime.now(timezone.utc) - timedelta(hours=keep_hours)
+    get_supabase().table("processed_updates").delete().lt(
+        "processed_at", cutoff.isoformat()
+    ).execute()
 
 
 # ---------- watchlist ----------

@@ -14,6 +14,7 @@ Khac biet so voi backend_api:
 import asyncio
 import json
 import logging
+import os
 from functools import lru_cache
 from typing import Any
 
@@ -88,8 +89,19 @@ def _sdk_env() -> dict[str, str]:
     trong .env (pydantic-settings doc vao Settings chu khong export ra os.environ). Neu
     khong truyen tay o day, SDK bao "Not logged in" du .env da co token.
     """
+    env: dict[str, str] = {}
     token = get_settings().claude_code_oauth_token.strip()
-    return {"CLAUDE_CODE_OAUTH_TOKEN": token} if token else {}
+    if token:
+        env["CLAUDE_CODE_OAUTH_TOKEN"] = token
+
+    # Tren serverless (Vercel) filesystem chi doc tru /tmp. api/index.py da tro HOME va
+    # CLAUDE_CONFIG_DIR sang /tmp; chuyen tiep xuong subprocess, neu khong binary Claude
+    # Code se co ghi vao ~/.claude va loi read-only filesystem.
+    for key in ("HOME", "CLAUDE_CONFIG_DIR", "XDG_CONFIG_HOME", "XDG_CACHE_HOME"):
+        value = os.environ.get(key)
+        if value:
+            env[key] = value
+    return env
 
 
 def _build_options(config: settings_store.AgentConfig) -> ClaudeAgentOptions:

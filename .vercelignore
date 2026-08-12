@@ -1,17 +1,9 @@
-# Vercel chi chay web admin. Loai bo moi thu khong can, nhat la .venv chua
-# claude-agent-sdk 273MB (vuot gioi han bundle cua Vercel).
+# Vercel chay ca he thong (web admin + bot webhook + cron), nen chi loai nhung thu
+# that su khong can trong function.
 .venv/
 venv/
 __pycache__/
 *.pyc
-
-# Phan chay tren Railway/VPS, khong dung o Vercel
-app/agent/backend_sdk.py
-app/agent/orchestrator.py
-app/tools/
-app/telegram_bot/
-app/scheduler.py
-app/main.py
 
 scripts/
 migrations/

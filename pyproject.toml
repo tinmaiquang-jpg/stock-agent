@@ -1,15 +1,17 @@
 [project]
-name = "stock-agent-admin"
+name = "stock-agent"
 version = "0.1.0"
-description = "Web admin cho tro ly chung khoan VN - phan deploy len Vercel"
+description = "Tro ly chung khoan VN - Telegram bot + web admin, chay tren Vercel"
 requires-python = ">=3.12"
 
-# CHI dung cho deploy Vercel (web admin). Vercel uu tien pyproject.toml hon
-# requirements.txt, nen day la cach de KHONG keo claude-agent-sdk (273MB, vuot gioi han
-# bundle) va vnstock/pandas/telegram vao function.
+# Vercel uu tien pyproject.toml hon requirements.txt. Day la bo day du de chay CA
+# he thong tren Vercel (web admin + bot webhook + cron).
 #
-# Chay local hoac deploy Railway thi dung requirements.txt (day du hon):
-#   uv pip install -r requirements.txt
+# Kich thuoc bundle: claude-agent-sdk ~273MB (co binary Claude Code) + pandas/numpy
+# ~71MB + con lai ~30MB = ~375MB. Gioi han Python cua Vercel la 500MB nen vua.
+#
+# Khong co apscheduler va uvicorn: serverless khong chay job nen va khong tu chay
+# server. Chay local/Docker thi dung requirements.txt (co day du).
 dependencies = [
     "fastapi==0.141.1",
     "jinja2==3.1.4",
@@ -17,6 +19,11 @@ dependencies = [
     "itsdangerous==2.2.0",
     "python-multipart==0.0.12",
     "pydantic-settings==2.5.2",
+    "claude-agent-sdk==0.2.135",
+    "python-telegram-bot==21.6",
+    "vnstock==4.0.5",
+    "tenacity==9.1.4",
+    "pandas==2.3.3",
 ]
 
 [tool.vercel]

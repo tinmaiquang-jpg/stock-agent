@@ -5,5 +5,11 @@
       "maxDuration": 300,
       "excludeFiles": "{.venv/**,venv/**,scripts/**,migrations/**,**/__pycache__/**,*.md,Dockerfile,docker-compose.yml,Caddyfile}"
     }
-  }
+  },
+  "crons": [
+    {
+      "path": "/api/cron/alerts",
+      "schedule": "0 8 * * *"
+    }
+  ]
 }

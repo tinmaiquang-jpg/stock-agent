@@ -1,12 +1,33 @@
-"""Entrypoint cho Vercel - CHI chay web admin (config, watchlist, alerts, logs).
+"""Entrypoint Vercel - chay CA HE THONG tren Vercel:
 
-Con bot Telegram, scheduler va agent KHONG chay o day: chung can process song lien tuc
-va claude-agent-sdk nang 273MB (vuot gioi han 250MB cua Vercel serverless function).
-Nhung phan do deploy tren Railway/VPS - xem DEPLOY.md.
+- Web admin (cau hinh, watchlist, alerts, nhat ky)
+- Telegram bot o che do webhook (POST /telegram/webhook)
+- Cron canh bao gia (GET /api/cron/alerts)
 
-Ca hai noi dung chung 1 Supabase, nen thay doi cau hinh o day co hieu luc ngay voi bot.
+Khac biet so voi chay lien tuc (Docker/VPS): khong co polling va khong co APScheduler,
+vi serverless khong giu process song giua cac request.
+
+Han che cua goi Hobby: cron chi chay 1 lan/ngay. Muon canh bao gia moi 15 phut trong
+gio giao dich thi phai len goi Pro, hoac chay phan scheduler o Railway/VPS.
 """
 
-from app.web.app import create_admin_app
+import os
+import tempfile
+
+# Filesystem cua Vercel chi doc, tru /tmp. Binary Claude Code (do claude-agent-sdk
+# spawn) can ghi config va transcript, mac dinh vao ~/.claude -> se loi. Tro no sang
+# /tmp TRUOC khi import bat ky module nao cham toi SDK.
+if os.environ.get("VERCEL"):
+    _tmp = tempfile.gettempdir()
+    os.environ.setdefault("HOME", _tmp)
+    os.environ.setdefault("CLAUDE_CONFIG_DIR", os.path.join(_tmp, ".claude"))
+    os.environ.setdefault("XDG_CONFIG_HOME", os.path.join(_tmp, ".config"))
+    os.environ.setdefault("XDG_CACHE_HOME", os.path.join(_tmp, ".cache"))
+
+from app.telegram_bot.webhook import router as telegram_router  # noqa: E402
+from app.web.app import create_admin_app  # noqa: E402
+from app.web.cron import router as cron_router  # noqa: E402
 
 app = create_admin_app()
+app.include_router(telegram_router)
+app.include_router(cron_router)

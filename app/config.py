@@ -20,6 +20,10 @@ class Settings(BaseSettings):
     telegram_bot_token: str = ""
     telegram_owner_id: int = 0
 
+    # Chi dung o che do webhook (Vercel). Telegram gui lai chuoi nay trong header
+    # X-Telegram-Bot-Api-Secret-Token de chung minh request that su tu Telegram.
+    telegram_webhook_secret: str = ""
+
     supabase_url: str
     supabase_key: str
 
