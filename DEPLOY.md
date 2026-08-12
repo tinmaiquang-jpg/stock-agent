@@ -230,9 +230,17 @@ với Phần A/B là Telegram chạy ở chế độ **webhook** thay vì pollin
 
 | Hạng mục | Số đo thật | Vercel cho phép | Kết luận |
 |---|---|---|---|
-| Kích thước bundle | ~375MB (`claude-agent-sdk` 273MB + pandas/numpy 71MB + ~30MB) | 500MB cho Python | ✅ vừa |
+| Kích thước bundle | **506MB** (đo trên chính build của Vercel) | 500MB, hoặc 5GB với Large Functions | ⚠️ phải bật Large Functions |
 | Thời gian agent trả lời | 20–60s | 300s (Hobby) | ✅ dư |
 | Cảnh báo giá mỗi 15 phút | — | **Hobby: 1 lần/ngày** | ❌ cần gói Pro |
+
+**Bắt buộc:** thêm biến môi trường `VERCEL_SUPPORT_LARGE_FUNCTIONS=1`, nếu không build sẽ
+fail với `Total bundle size (506.40 MB) exceeds the maximum function size (500 MB)`.
+
+Phần lớn dung lượng đến từ `claude-agent-sdk` — nó bundle sẵn binary Claude Code (273MB đo
+trên macOS, lớn hơn trên Linux). Không cắt được vì đó chính là thứ cho phép dùng gói Claude
+Pro/Max thay vì trả tiền API. Tách thành nhiều function cũng không giúp: Vercel không
+tree-shake Python, mỗi function đều gói toàn bộ dependency.
 
 **Điểm đánh đổi lớn nhất:** gói Hobby chỉ cho cron chạy 1 lần/ngày, và cron dày hơn sẽ **fail
 ngay lúc deploy**. Cấu hình sẵn trong [vercel.json](vercel.json) là `0 8 * * *` — tức 15:00 giờ
@@ -279,8 +287,12 @@ không cần đổi Build settings.
 | `ADMIN_PASSWORD_HASH` | Giống `.env` local |
 | `APP_SECRET_KEY` | Giống `.env` local |
 | `CRON_SECRET` | Chuỗi ngẫu nhiên — Vercel tự gửi kèm khi gọi cron |
+| `VERCEL_SUPPORT_LARGE_FUNCTIONS` | `1` — bắt buộc, xem phần giới hạn ở trên |
 
 **Không** thêm `SESSION_HTTPS_ONLY` (Vercel có HTTPS sẵn, mặc định `true` là đúng).
+
+Khi redeploy sau lúc đổi biến, nhớ **bỏ tick "Use existing Build Cache"** để dependency được
+cài lại.
 
 ### C5. Đăng ký webhook
 
