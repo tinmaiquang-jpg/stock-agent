@@ -8,6 +8,7 @@ import hmac
 import logging
 
 from fastapi import APIRouter, Header, Request, Response
+from fastapi.responses import JSONResponse
 from telegram import Update
 
 from app.config import get_settings
@@ -59,10 +60,16 @@ async def telegram_webhook(
         logger.info("Bo qua update %s da xu ly truoc do", update_id)
         return Response(status_code=200)
 
-    application = await _get_application()
-    update = Update.de_json(data, application.bot)
+    try:
+        application = await _get_application()
+    except Exception as exc:
+        # Thuong la thieu TELEGRAM_BOT_TOKEN / TELEGRAM_OWNER_ID trong bien moi truong.
+        # Tra 500 kem ly do de nhin log ra ngay, thay vi 500 tran khong noi gi.
+        logger.exception("Khong khoi tao duoc Telegram application")
+        return JSONResponse(status_code=500, content={"error": str(exc)})
 
     try:
+        update = Update.de_json(data, application.bot)
         await application.process_update(update)
     except Exception:
         # Van tra 200: neu tra loi, Telegram se gui lai va gap dung loi nay lan nua.
