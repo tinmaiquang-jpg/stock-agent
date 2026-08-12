@@ -1,10 +1,22 @@
 from functools import lru_cache
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+
+    @field_validator("*", mode="before")
+    @classmethod
+    def _strip_whitespace(cls, value):
+        """Cat khoang trang thua o moi bien.
+
+        Dan secret vao o Environment Variables cua Vercel rat de kem theo dau xuong dong;
+        khi do token dai 109 thay vi 108 va API tu choi voi loi kho hieu. Da mat nhieu vong
+        lap vi chuyen nay - xu ly mot lan o day thay vi rai .strip() khap noi.
+        """
+        return value.strip() if isinstance(value, str) else value
 
     # Chi can khi backend = 'api_key'. Backend 'subscription' dung
     # CLAUDE_CODE_OAUTH_TOKEN (Agent SDK doc truc tiep tu bien moi truong).
