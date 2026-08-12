@@ -29,7 +29,9 @@ if os.environ.get("VERCEL"):
 from app.telegram_bot.webhook import router as telegram_router  # noqa: E402
 from app.web.app import create_admin_app  # noqa: E402
 from app.web.cron import router as cron_router  # noqa: E402
+from app.web.health import router as health_router  # noqa: E402
 
 app = create_admin_app()
 app.include_router(telegram_router)
 app.include_router(cron_router)
+app.include_router(health_router)
