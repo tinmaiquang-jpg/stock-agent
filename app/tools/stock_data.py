@@ -10,6 +10,7 @@ from typing import Any
 import pandas as pd
 from vnstock.api.company import Company
 from vnstock.api.financial import Finance
+from vnstock.api.listing import Listing
 from vnstock.api.quote import Quote
 from vnstock.api.trading import Trading
 
@@ -40,6 +41,21 @@ def _finance(symbol: str, period: str) -> Finance:
 @lru_cache(maxsize=8)
 def _trading() -> Trading:
     return Trading(source=DEFAULT_SOURCE)
+
+
+# Danh sach nhom chi co nguon KBS tra ve duoc (VCI/MSN nem NotImplementedError)
+@lru_cache(maxsize=2)
+def _listing() -> Listing:
+    return Listing(source="KBS")
+
+
+def get_group_symbols(group: str = "VN30") -> list[str]:
+    """Danh sach ma trong mot nhom: VN30, VN100, HNX30, HOSE, UPCOM, VNMidCap..."""
+    try:
+        symbols = _listing().symbols_by_group(group=group.upper())
+    except Exception as exc:
+        raise StockDataError(f"Khong lay duoc danh sach nhom {group}: {exc}") from exc
+    return [str(s).upper() for s in symbols]
 
 
 def _df_to_records(df: pd.DataFrame) -> list[dict[str, Any]]:

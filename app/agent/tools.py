@@ -7,9 +7,61 @@ import json
 from typing import Any
 
 from app.db import repository
-from app.tools import stock_data
+from app.tools import screener, stock_data
 
 TOOL_SCHEMAS: list[dict[str, Any]] = [
+    {
+        "name": "screen_stocks",
+        "description": (
+            "Quet ca nhom co phieu, cham diem va xep hang cac ma dang co setup swing trade "
+            "(giu vai ngay den vai tuan). Dung khi nguoi dung hoi 'ma nao dang dep', "
+            "'co gi de mua khong', 'quet thi truong', 'tim co hoi'. "
+            "Tra ve kem ly do cu the, gia vao, cat lo, muc tieu va ty le R:R. "
+            "Day la tin hieu ky thuat, KHONG phai khuyen nghi dau tu - phai noi ro dieu do "
+            "va nhac nguoi dung tu quyet dinh."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "group": {
+                    "type": "string",
+                    "description": "Nhom can quet: VN30 (mac dinh), VN100, HNX30, HOSE, VNMidCap",
+                },
+                "strategy": {
+                    "type": "string",
+                    "enum": ["all", "fib_pullback", "breakout", "macd_cross", "oversold_bounce"],
+                    "description": (
+                        "all = tat ca. fib_pullback = thoai lui ve vung Fibonacci trong xu huong "
+                        "tang. breakout = vuot dinh 20 phien kem khoi luong. macd_cross = MACD cat "
+                        "len. oversold_bounce = qua ban hoi phuc (rui ro cao nhat)."
+                    ),
+                },
+                "top_n": {"type": "integer", "description": "So ma tra ve, mac dinh 10"},
+                "min_score": {
+                    "type": "integer",
+                    "description": "Diem toi thieu 0-100, mac dinh 50. Tang len de loc chat hon.",
+                },
+            },
+            "required": [],
+        },
+    },
+    {
+        "name": "analyze_technical",
+        "description": (
+            "Phan tich ky thuat day du 1 ma: RSI, MACD, cac duong MA, Bollinger, ATR, "
+            "cac muc Fibonacci retracement cua nhip tang gan nhat, khoi luong so voi trung binh, "
+            "vi tri so voi dinh/day 52 tuan, va cac setup dang khop. "
+            "Dung khi nguoi dung hoi ve phan tich ky thuat, Fibonacci, diem vao lenh, "
+            "cat lo cua 1 ma cu the."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "symbol": {"type": "string", "description": "Ma chung khoan, vd FPT, VNM"}
+            },
+            "required": ["symbol"],
+        },
+    },
     {
         "name": "get_price",
         "description": (
@@ -165,6 +217,15 @@ def execute_tool(name: str, params: dict[str, Any]) -> str:
 
 
 def _dispatch(name: str, p: dict[str, Any]) -> Any:
+    if name == "screen_stocks":
+        return screener.screen(
+            group=p.get("group", "VN30"),
+            strategy=p.get("strategy", "all"),
+            top_n=p.get("top_n", 10),
+            min_score=p.get("min_score", 50),
+        )
+    if name == "analyze_technical":
+        return screener.analyze_symbol(p["symbol"])
     if name == "get_price":
         return stock_data.get_current_price(p["symbol"])
     if name == "get_price_board":
