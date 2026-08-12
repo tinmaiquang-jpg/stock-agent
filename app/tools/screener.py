@@ -23,19 +23,37 @@ HISTORY_DAYS = 400
 STRATEGIES = ("fib_pullback", "breakout", "macd_cross", "oversold_bounce")
 
 
-def _risk_levels(snap: dict[str, Any], entry: float) -> dict[str, Any]:
-    """Cat lo / chot lai theo ATR - moi ma co bien dong rieng nen dung % co dinh
-    (vd 'cat lo 5%') se qua chat voi ma bien dong manh va qua rong voi ma it bien dong."""
+def _risk_levels(snap: dict[str, Any], entry: float, setup: str) -> dict[str, Any]:
+    """Cat lo theo ATR, chot lai theo khang cu that.
+
+    Cat lo dung ATR vi moi ma co bien dong rieng: '% co dinh' se qua chat voi ma bien dong
+    manh va qua rong voi ma it bien dong.
+
+    Muc tieu KHONG dung boi so ATR co dinh - lam vay thi R:R luon ra cung mot so va mat het
+    y nghia. Thay vao do lay khang cu that: dinh cu voi setup thoai lui, muc mo rong
+    Fibonacci voi setup pha vo. Nho vay R:R phan anh dung tung co hoi.
+    """
     atr_value = snap.get("atr14")
     if not atr_value:
         return {}
 
-    stop = entry - 2 * atr_value
-    target = entry + 3 * atr_value
-
-    # Neu Fibonacci co muc mo rong nam cao hon, uu tien lam muc tieu 2
     fib = snap.get("fibonacci") or {}
-    target2 = fib.get("extension_1.272")
+    stop = entry - 2 * atr_value
+
+    if setup in ("fib_pullback", "oversold_bounce") and fib.get("swing_high"):
+        target = float(fib["swing_high"])  # ky vong quay lai kiem tra dinh cu
+        target_note = "dinh cu cua nhip tang"
+    elif setup == "breakout" and fib.get("extension_1.272"):
+        target = float(fib["extension_1.272"])
+        target_note = "muc mo rong Fibonacci 1.272"
+    else:
+        target = entry + 3 * atr_value
+        target_note = "3x ATR (khong tim duoc khang cu ro rang)"
+
+    # Khang cu da bi vuot qua thi khong con la muc tieu - lui ve boi so ATR
+    if target <= entry * 1.01:
+        target = entry + 3 * atr_value
+        target_note = "3x ATR (khang cu gan nhat da bi vuot)"
 
     risk = entry - stop
     return {
@@ -44,7 +62,7 @@ def _risk_levels(snap: dict[str, Any], entry: float) -> dict[str, Any]:
         "stop_loss_pct": round((stop - entry) / entry * 100, 1),
         "target": round(target, 2),
         "target_pct": round((target - entry) / entry * 100, 1),
-        "target_fib_extension": target2,
+        "target_basis": target_note,
         "risk_reward": round((target - entry) / risk, 2) if risk > 0 else None,
     }
 
@@ -216,16 +234,33 @@ def _analyze(symbol: str, raw: list[dict[str, Any]]) -> dict[str, Any]:
     setups = []
     for name, checker in _CHECKERS.items():
         result = checker(snap)
-        if result:
-            score, reasons = result
-            setups.append(
-                {
-                    "setup": name,
-                    "score": max(0, min(100, score)),
-                    "reasons": reasons,
-                    **_risk_levels(snap, snap["price"]),
-                }
-            )
+        if not result:
+            continue
+        score, reasons = result
+        risk = _risk_levels(snap, snap["price"], name)
+
+        # Setup dep ve ky thuat nhung rui ro lon hon loi nhuan ky vong thi khong phai co hoi
+        # tot. Khong tinh yeu to nay thi bang xep hang se day len dau nhung ma R:R < 1.
+        rr = risk.get("risk_reward")
+        if rr is not None:
+            if rr >= 2:
+                reasons.append(f"R:R {rr} - lai ky vong gap doi rui ro")
+                score += 15
+            elif rr >= 1.5:
+                reasons.append(f"R:R {rr} - chap nhan duoc")
+                score += 10
+            elif rr < 1:
+                reasons.append(f"R:R {rr} - CANH BAO: rui ro lon hon loi nhuan toi muc tieu dau")
+                score -= 20
+
+        setups.append(
+            {
+                "setup": name,
+                "score": max(0, min(100, score)),
+                "reasons": reasons,
+                **risk,
+            }
+        )
 
     setups.sort(key=lambda s: s["score"], reverse=True)
     return {"symbol": symbol, "indicators": snap, "setups": setups}
